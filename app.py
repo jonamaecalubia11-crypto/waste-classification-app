@@ -1,10 +1,10 @@
 import streamlit as st
-import pickle
 import numpy as np
 
 # Load model
-with open("waste_model.pkl", "rb") as f:
-    model = pickle.load(f)
+import joblib
+
+model = joblib.load("waste_model.pkl")
 
 st.title("Waste Classification App")
 
