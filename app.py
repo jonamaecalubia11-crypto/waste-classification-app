@@ -4,7 +4,9 @@ import numpy as np
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.ensemble import RandomForestClassifier
 
-# --- MODEL SETUP ---
+# =====================
+# MODEL SETUP
+# =====================
 @st.cache_resource
 def setup_model():
     data = {
@@ -61,39 +63,50 @@ def setup_model():
     return model, scaler, le_desc, le_mat, le_target
 
 
-# Load model
 model, scaler, le_desc, le_mat, le_target = setup_model()
 
-# --- UI ---
+# =====================
+# UI
+# =====================
 st.title("♻️ Waste Classification System")
-st.write("Predict whether waste is biodegradable, recyclable, or residual.")
+st.write("Enter waste details to predict its type.")
 
-description = st.selectbox("Select Item Description", le_desc.classes_)
-material = st.selectbox("Select Material", le_mat.classes_)
-weight = st.number_input("Weight (grams)", min_value=0.0, value=100.0)
+# ✅ CHANGED: Manual text input instead of selectbox
+description = st.text_input("Enter Item Description (e.g. banana peel)")
+material = st.selectbox("Material", le_mat.classes_)
+
+weight = st.number_input("Weight (grams)", value=100.0)
 moisture = st.slider("Moisture Level", 0.0, 1.0, 0.5)
 reusability = st.slider("Reusability Score", 0.0, 1.0, 0.1)
 
-# --- PREDICTION ---
+# =====================
+# PREDICTION
+# =====================
 if st.button("Predict Waste Type"):
 
-    desc_encoded = le_desc.transform([description])[0]
-    mat_encoded = le_mat.transform([material])[0]
-
-    sample = np.array([[desc_encoded, mat_encoded, weight, moisture, reusability]])
-    sample_scaled = scaler.transform(sample)
-
-    prediction = model.predict(sample_scaled)[0]
-    result = le_target.inverse_transform([prediction])[0]
-
-    st.success(f"♻️ Predicted Waste Type: {result.upper()}")
-
-    if result == "biodegradable":
-        st.info("This item can be composted.")
-    elif result == "recyclable":
-        st.info("Send this to recycling facilities.")
+    # Validate description input
+    if description.strip() == "":
+        st.error("Please enter a valid description.")
+    elif description not in le_desc.classes_:
+        st.error("Unknown description. Try using training data words like 'banana peel', 'plastic bottle', etc.")
     else:
-        st.warning("Dispose as general waste.")
+        desc_encoded = le_desc.transform([description])[0]
+        mat_encoded = le_mat.transform([material])[0]
+
+        sample = np.array([[desc_encoded, mat_encoded, weight, moisture, reusability]])
+        sample_scaled = scaler.transform(sample)
+
+        prediction = model.predict(sample_scaled)[0]
+        result = le_target.inverse_transform([prediction])[0]
+
+        st.success(f"♻️ Predicted Waste Type: {result.upper()}")
+
+        if result == "biodegradable":
+            st.info("Can be composted.")
+        elif result == "recyclable":
+            st.info("Send to recycling center.")
+        else:
+            st.warning("Dispose as general waste.")
 
 # --- OPTIONAL DATA VIEW ---
 if st.checkbox("Show Training Data"):
