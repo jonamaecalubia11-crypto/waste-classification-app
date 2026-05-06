@@ -4,8 +4,7 @@ import numpy as np
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.ensemble import RandomForestClassifier
 
-# --- SETUP (Required for the button to work) ---
-# This section recreates the model and tools from test_waste.ipynb[cite: 1]
+# --- MODEL SETUP ---
 @st.cache_resource
 def setup_model():
     data = {
@@ -37,70 +36,65 @@ def setup_model():
             "residual","residual","residual","residual","residual"
         ]
     }
-    df = pd.DataFrame(data)[cite: 1]
-    
+
+    df = pd.DataFrame(data)
+
     le_desc = LabelEncoder()
     le_mat = LabelEncoder()
     le_target = LabelEncoder()
-    
-    # Pre-process features for training[cite: 1]
+
     df_train = df.copy()
+
     df_train["description"] = le_desc.fit_transform(df_train["description"])
     df_train["material"] = le_mat.fit_transform(df_train["material"])
     df_train["waste_type"] = le_target.fit_transform(df_train["waste_type"])
-    
-    X = df_train.drop("waste_type", axis=1)[cite: 1]
-    y = df_train["waste_type"][cite: 1]
-    
+
+    X = df_train.drop("waste_type", axis=1)
+    y = df_train["waste_type"]
+
     scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(X)[cite: 1]
-    
+    X_scaled = scaler.fit_transform(X)
+
     model = RandomForestClassifier(random_state=42)
-    model.fit(X_scaled, y)[cite: 1]
-    
+    model.fit(X_scaled, y)
+
     return model, scaler, le_desc, le_mat, le_target
 
+
+# Load model
 model, scaler, le_desc, le_mat, le_target = setup_model()
 
-# --- INPUT UI ---
-st.title("Waste Classifier")
-item_desc = st.selectbox("Description", le_desc.classes_)
-item_material = st.selectbox("Material", le_mat.classes_)
-weight = st.number_input("Weight (grams)", value=100)
-moisture = st.slider("Moisture Level", 0.0, 1.0, 0.1)
+# --- UI ---
+st.title("♻️ Waste Classification System")
+st.write("Predict whether waste is biodegradable, recyclable, or residual.")
+
+description = st.selectbox("Select Item Description", le_desc.classes_)
+material = st.selectbox("Select Material", le_mat.classes_)
+weight = st.number_input("Weight (grams)", min_value=0.0, value=100.0)
+moisture = st.slider("Moisture Level", 0.0, 1.0, 0.5)
 reusability = st.slider("Reusability Score", 0.0, 1.0, 0.1)
 
-# --- YOUR REQUESTED BLOCK ---
-if st.button("Classify Waste"):
-    # Encode inputs
-    desc_encoded = le_desc.transform([item_desc])[0]
-    mat_encoded = le_mat.transform([item_material])[0]
-    
-    # Create feature array
-    features = np.array([[desc_encoded, mat_encoded, weight, moisture, reusability]])
-    features_scaled = scaler.transform(features)
-    
-    # Predict
-    prediction_idx = model.predict(features_scaled)[0]
-    prediction_label = le_target.inverse_transform([prediction_idx])[0]
-    
-    # Display Results
-    st.divider()
-    st.subheader(f"Result: {prediction_label.upper()}")
-    
-    if prediction_label == "biodegradable":
-        st.success("This item can be composted!")
-    elif prediction_label == "recyclable":
-        st.info("Ensure this item is clean before recycling.")
-    else:
-        st.warning("This item should be disposed of in general waste.")
+# --- PREDICTION ---
+if st.button("Predict Waste Type"):
 
-# Display training data overview
-if st.checkbox("Show Training Data Sample"):
-    st.write("This is a preview of the data used to train the model:")
-    # Reconstructing a readable dataframe for display
-    display_df = pd.DataFrame({
-        "Description": le_desc.classes_,
-        "Type": ["Refer to training set" for _ in le_desc.classes_]
-    })
-    st.dataframe(display_df.head())
+    desc_encoded = le_desc.transform([description])[0]
+    mat_encoded = le_mat.transform([material])[0]
+
+    sample = np.array([[desc_encoded, mat_encoded, weight, moisture, reusability]])
+    sample_scaled = scaler.transform(sample)
+
+    prediction = model.predict(sample_scaled)[0]
+    result = le_target.inverse_transform([prediction])[0]
+
+    st.success(f"♻️ Predicted Waste Type: {result.upper()}")
+
+    if result == "biodegradable":
+        st.info("This item can be composted.")
+    elif result == "recyclable":
+        st.info("Send this to recycling facilities.")
+    else:
+        st.warning("Dispose as general waste.")
+
+# --- OPTIONAL DATA VIEW ---
+if st.checkbox("Show Training Data"):
+    st.dataframe(pd.DataFrame(data))
