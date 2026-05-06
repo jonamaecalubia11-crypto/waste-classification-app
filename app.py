@@ -108,6 +108,3 @@ if st.button("Predict Waste Type"):
         else:
             st.warning("Dispose as general waste.")
 
-# --- OPTIONAL DATA VIEW ---
-if st.checkbox("Show Training Data"):
-    st.dataframe(pd.DataFrame(data))
