@@ -35,7 +35,7 @@ if st.button("Predict Waste Type"):
 
     try:
         # Encode material
-        material_encoded = le_mat.transform([material])[0]
+       material = st.selectbox("Select Material", le_mat.classes_)
 
         # Create input array
         sample = np.array([[material_encoded, weight, moisture, reusability]])
